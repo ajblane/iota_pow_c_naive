@@ -63,6 +63,16 @@ static const int indices_[] = {
     12,  376, 11,  375, 10,  374, 9,   373, 8,   372, 7,   371, 6,   370, 5,
     369, 4,   368, 3,   367, 2,   366, 1,   365, 0};
 
+void transform64(uint64_t *lmid, uint64_t *hmid);
+int incr(uint64_t *mid_low, uint64_t *mid_high);
+void seri(uint64_t *l, uint64_t *h, int n, int8_t *r);
+int check(uint64_t *l, uint64_t *h, int m);
+long long int loop_cpu(uint64_t *lmid,
+                       uint64_t *hmid,
+                       int m,
+                       int8_t *nonce);
+void para(int8_t in[], uint64_t l[], uint64_t h[]);
+
 void transform64(uint64_t *lmid, uint64_t *hmid)
 {
     uint64_t alpha, beta, gamma, delta;
@@ -70,6 +80,7 @@ void transform64(uint64_t *lmid, uint64_t *hmid)
     uint64_t *lto = lmid + STATE_LENGTH, *hto = hmid + STATE_LENGTH;
 
     for (int r = 0; r < 80; r++) {
+	uint64_t *lswap, *hswap;
         for (int j = 0; j < STATE_LENGTH; j++) {
             int t1 = indices_[j];
             int t2 = indices_[j + 1];
@@ -80,7 +91,8 @@ void transform64(uint64_t *lmid, uint64_t *hmid)
             lto[j] = ~delta;
             hto[j] = (alpha ^ gamma) | delta;
         }
-        uint64_t *lswap = lfrom, *hswap = hfrom;
+        lswap = lfrom;
+        hswap = hfrom;
         lfrom = lto;
         hfrom = hto;
         lto = lswap;
@@ -187,6 +199,8 @@ void para(int8_t in[], uint64_t l[], uint64_t h[])
             l[i] = HBITS;
             h[i] = LBITS;
             break;
+	default:
+	    break;
         }
     }
 }
@@ -194,8 +208,9 @@ void para(int8_t in[], uint64_t l[], uint64_t h[])
 static int64_t pwork(int8_t mid[], int mwm, int8_t nonce[])
 {
     uint64_t lmid[STATE_LENGTH] = {0}, hmid[STATE_LENGTH] = {0};
-    para(mid, lmid, hmid);
     int offset = HASH_LENGTH - NONCE_LENGTH;
+
+    para(mid, lmid, hmid);
 
     lmid[offset] = LOW0;
     hmid[offset] = HIGH0;
@@ -211,26 +226,29 @@ static int64_t pwork(int8_t mid[], int mwm, int8_t nonce[])
 
 static int8_t *tx_to_cstate(Trytes_t *tx)
 {
+    int8_t tyt[(transactionTrinarySize - HashSize) / 3] = {0};
     Curl *c = initCurl();
+    Trits_t *tr;
+    int8_t *c_state;
+    Trytes_t *inn;
+
     if (!c)
         return NULL;
 
-    int8_t *c_state = (int8_t *) malloc(c->state->len);
+    c_state = (int8_t *) malloc(c->state->len);
     if (!c_state)
         return NULL;
-
-    int8_t tyt[(transactionTrinarySize - HashSize) / 3] = {0};
 
     /* Copy tx->data[:(transactionTrinarySize - HashSize) / 3] to tyt */
     memcpy(tyt, tx->data, (transactionTrinarySize - HashSize) / 3);
 
-    Trytes_t *inn = initTrytes(tyt, (transactionTrinarySize - HashSize) / 3);
+    inn = initTrytes(tyt, (transactionTrinarySize - HashSize) / 3);
     if (!inn)
         return NULL;
 
     Absorb(c, inn);
 
-    Trits_t *tr = trits_from_trytes(tx);
+    tr = trits_from_trytes(tx);
     if (!tr)
         return NULL;
 
@@ -262,38 +280,42 @@ static int8_t *nonce_to_result(Trytes_t *tx, Trytes_t *nonce)
     return rst;
 }
 
-int pow_c_init(int num_task)
+int pow_c_init(void)
 {
     return 0;
 }
 
-void pow_c_destroy()
+void pow_c_destroy(void)
 {
 }
 
 int8_t *PowC(int8_t *trytes, int mwm)
 {
     Trytes_t *trytes_t = initTrytes(trytes, 2673);
+    int8_t * nonce;
+    Trits_t *nonce_t;
+    Trytes_t * trytes_nonce;
+    int8_t * result;
 
     int8_t *c_state = tx_to_cstate(trytes_t);
     if (!c_state)
         return NULL;
 
-    int8_t * nonce = (int8_t *) malloc(NonceTrinarySize);
+    nonce = (int8_t *) malloc(NonceTrinarySize);
     if (!nonce)
         return NULL;
     
     pwork(c_state, mwm, nonce);
 
-    Trits_t *nonce_t = initTrits(nonce, NonceTrinarySize);
+    nonce_t = initTrits(nonce, NonceTrinarySize);
     if (!nonce_t)
         return NULL;
 
-    Trytes_t * trytes_nonce = trytes_from_trits(nonce_t);
+    trytes_nonce = trytes_from_trits(nonce_t);
     if (!trytes_nonce)
         return NULL;
 
-    int8_t * result = nonce_to_result(trytes_t, trytes_nonce);
+    result = nonce_to_result(trytes_t, trytes_nonce);
 
     /* Free memory */
     free(c_state);

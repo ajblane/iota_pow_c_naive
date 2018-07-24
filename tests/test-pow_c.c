@@ -52,7 +52,7 @@ int main()
     int mwm = 14;
 
     /* test C Implementation with mwm = 14 */
-    pow_c_init(1);
+    pow_c_init();
     int8_t *ret_trytes = PowC((int8_t *) trytes, mwm);
     printf("%s \n", (char*) ret_trytes );
     pow_c_destroy();

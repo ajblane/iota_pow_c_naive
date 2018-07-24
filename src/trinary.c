@@ -113,7 +113,9 @@ Trobject_t *initTrytes(int8_t *src, int len)
 
 Trobject_t *trytes_from_trits(Trobject_t *trits)
 {
-    if (!trits) {
+   Trobject_t *trytes = NULL; 
+   int8_t *src;
+   if (!trits) {
         return NULL;
     }
 
@@ -122,8 +124,8 @@ Trobject_t *trytes_from_trits(Trobject_t *trits)
         return NULL;
     }
 
-    Trobject_t *trytes = NULL;
-    int8_t *src = (int8_t *) malloc(trits->len / 3);
+    
+    src = (int8_t *) malloc(trits->len / 3);
 
     /* Start converting */
     for (int i = 0; i < trits->len / 3; i++) {
@@ -143,6 +145,8 @@ Trobject_t *trytes_from_trits(Trobject_t *trits)
 
 Trobject_t *trits_from_trytes(Trobject_t *trytes)
 {
+    Trobject_t *trits = NULL;
+    int8_t *src;
     if (!trytes)
         return NULL;
 
@@ -151,8 +155,7 @@ Trobject_t *trits_from_trytes(Trobject_t *trytes)
         return NULL;
     }
 
-    Trobject_t *trits = NULL;
-    int8_t *src = (int8_t *) malloc(trytes->len * 3);
+    src = (int8_t *) malloc(trytes->len * 3);
 
     /* Start converting */
     for (int i = 0; i < trytes->len; i++) {
@@ -169,15 +172,18 @@ Trobject_t *trits_from_trytes(Trobject_t *trytes)
 }
 
 Trobject_t *hashTrytes(Trobject_t *t)
-{
+{ 
+    Trobject_t *ret;
+    Curl *c ;
+    
     if (t->type != TYPE_TRYTES)
         return NULL;
 
-    Curl *c = initCurl();
+    c = initCurl();
     if (!c)
         return NULL;
     Absorb(c, t);
-    Trobject_t *ret = Squeeze(c);
+    ret = Squeeze(c);
 
     freeCurl(c);
     return ret;

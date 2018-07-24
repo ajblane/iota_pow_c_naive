@@ -64,6 +64,7 @@ static const int indices__[] = {
 static void _transform(int8_t state[])
 {
     int r = 0, i = 0;
+    int8_t *tmp;
     int8_t copy[STATE_LENGTH] = {0};
     int8_t *from = state, *to = copy;
     for (r = 0; r < 81; r++) {
@@ -72,7 +73,7 @@ static void _transform(int8_t state[])
             int bb = indices__[i + 1];
             to[i] = truthTable[from[aa] + (from[bb] << 2) + 5];
         }
-        int8_t *tmp = from;
+        tmp = from;
         from = to;
         to = tmp;
     }
@@ -105,12 +106,13 @@ void Absorb(Curl *c, Trytes_t *inn)
 Trytes_t *Squeeze(Curl *c)
 {
     int8_t src[HASH_LENGTH] = {0};
-
+    Trits_t *trits;
+    Trytes_t *trytes;
     /* Get trits[:HASH_LENGTH] to an array */
     memcpy(src, c->state->data, HASH_LENGTH);
 
-    Trits_t *trits = initTrits(src, HASH_LENGTH);
-    Trytes_t *trytes = trytes_from_trits(trits);
+    trits = initTrits(src, HASH_LENGTH);
+    trytes = trytes_from_trits(trits);
 
     Transform(c);
     freeTrobject(trits);
@@ -118,13 +120,13 @@ Trytes_t *Squeeze(Curl *c)
     return trytes;
 }
 
-Curl *initCurl()
+Curl *initCurl(void)
 {
+    int8_t src[STATE_LENGTH] = {0}; 
     Curl *c = (Curl *) malloc(sizeof(Curl));
     if (!c)
         return NULL;
 
-    int8_t src[STATE_LENGTH] = {0};
     c->state = initTrits(src, STATE_LENGTH);
 
     return c;

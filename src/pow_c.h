@@ -16,8 +16,8 @@ struct _pwork_struct {
 };
 
 int8_t *PowC(int8_t *trytes, int mwm);
-int pow_c_init(int num_task);
-void pow_c_destroy();
+int pow_c_init(void);
+void pow_c_destroy(void);
 
 #define HBITS 0xFFFFFFFFFFFFFFFFuLL
 #define LBITS 0x0000000000000000uLL

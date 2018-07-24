@@ -14,7 +14,7 @@ void Absorb(Curl *c, Trytes_t *inn);
 void Transform(Curl *c);
 Trytes_t *Squeeze(Curl *c);
 
-Curl *initCurl();
+Curl *initCurl(void);
 void freeCurl(Curl *c);
 
 #endif
