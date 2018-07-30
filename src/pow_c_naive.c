@@ -169,7 +169,10 @@ long long int loop_cpu(uint64_t *lmid,
 {
     int n = 0;
     long long int i = 0;
-    uint64_t lcpy[STATE_LENGTH * 2], hcpy[STATE_LENGTH * 2];
+    uint64_t *lcpy;
+    uint64_t *hcpy;
+    lcpy = (uint64_t *) malloc(sizeof(uint64_t) * STATE_LENGTH * 2);
+    hcpy = (uint64_t *) malloc(sizeof(uint64_t) * STATE_LENGTH * 2);
 
     for (i = 0; !incr(lmid, hmid); i++) {
         memcpy(lcpy, lmid, STATE_LENGTH * sizeof(uint64_t));
@@ -177,9 +180,14 @@ long long int loop_cpu(uint64_t *lmid,
         transform64(lcpy, hcpy);
         if ((n = check(lcpy + STATE_LENGTH, hcpy + STATE_LENGTH, m)) >= 0) {
             seri(lmid, hmid, n, nonce);
+            free(lcpy);
+            free(hcpy);
             return i * 64;
         }
     }
+    
+    free(lcpy);
+    free(hcpy);
     return -i * 64 + 1;
 }
 
@@ -207,8 +215,16 @@ void para(int8_t in[], uint64_t l[], uint64_t h[])
 
 static int64_t pwork(int8_t mid[], int mwm, int8_t nonce[])
 {
-    uint64_t lmid[STATE_LENGTH] = {0}, hmid[STATE_LENGTH] = {0};
-    int offset = HASH_LENGTH - NONCE_LENGTH;
+    uint64_t *lmid;
+    uint64_t *hmid;
+    int64_t result;
+    int offset;
+    
+    offset = HASH_LENGTH - NONCE_LENGTH;
+    lmid = (uint64_t *) malloc(sizeof(uint64_t) * STATE_LENGTH);
+    hmid = (uint64_t *) malloc(sizeof(uint64_t) * STATE_LENGTH);
+    memset(lmid, 0, STATE_LENGTH);
+    memset(hmid, 0, STATE_LENGTH);   
 
     para(mid, lmid, hmid);
 
@@ -221,16 +237,24 @@ static int64_t pwork(int8_t mid[], int mwm, int8_t nonce[])
     lmid[offset + 3] = LOW3;
     hmid[offset + 3] = HIGH3;
 
-    return loop_cpu(lmid, hmid, mwm, nonce);
+    result = loop_cpu(lmid, hmid, mwm, nonce);
+    
+    free(lmid);
+    free(hmid);
+    return result;
 }
 
 static int8_t *tx_to_cstate(Trytes_t *tx)
 {
-    int8_t tyt[(transactionTrinarySize - HashSize) / 3] = {0};
-    Curl *c = initCurl();
+    int8_t *tyt;
+    Curl *c;
     Trits_t *tr;
     int8_t *c_state;
     Trytes_t *inn;
+
+    tyt = (int8_t *) malloc(sizeof(int8_t) * ((transactionTrinarySize - HashSize) / 3));
+    memset(tyt, 0, (transactionTrinarySize - HashSize) / 3);
+    c = initCurl();
 
     if (!c)
         return NULL;
@@ -262,6 +286,7 @@ static int8_t *tx_to_cstate(Trytes_t *tx)
     freeTrobject(inn);
     freeTrobject(tr);
     freeCurl(c);
+    free(tyt);
 
     return c_state;
 }

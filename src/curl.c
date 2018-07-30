@@ -65,8 +65,15 @@ static void _transform(int8_t state[])
 {
     int r = 0, i = 0;
     int8_t *tmp;
-    int8_t copy[STATE_LENGTH] = {0};
-    int8_t *from = state, *to = copy;
+    int8_t *copy;
+    int8_t *from;
+    int8_t *to;
+
+    copy = (int8_t *) malloc(sizeof(int8_t) * STATE_LENGTH);
+    from = state;
+    to = copy;
+    memset(copy, 0, STATE_LENGTH);
+
     for (r = 0; r < 81; r++) {
         for (i = 0; i < STATE_LENGTH; i++) {
             int aa = indices__[i];
@@ -78,6 +85,7 @@ static void _transform(int8_t state[])
         to = tmp;
     }
     memcpy(state, copy, STATE_LENGTH);
+    free(copy);
 }
 
 void Transform(Curl *c)
@@ -105,9 +113,12 @@ void Absorb(Curl *c, Trytes_t *inn)
 
 Trytes_t *Squeeze(Curl *c)
 {
-    int8_t src[HASH_LENGTH] = {0};
+    int8_t *src;
     Trits_t *trits;
     Trytes_t *trytes;
+    
+    src = (int8_t*) malloc(sizeof(int8_t) * HASH_LENGTH);
+    memset(src, 0, HASH_LENGTH);
     /* Get trits[:HASH_LENGTH] to an array */
     memcpy(src, c->state->data, HASH_LENGTH);
 
@@ -116,19 +127,22 @@ Trytes_t *Squeeze(Curl *c)
 
     Transform(c);
     freeTrobject(trits);
-
+    free(src);
     return trytes;
 }
 
 Curl *initCurl(void)
 {
-    int8_t src[STATE_LENGTH] = {0}; 
-    Curl *c = (Curl *) malloc(sizeof(Curl));
+    int8_t *src;
+    Curl *c;
+    src =  (int8_t*) malloc(sizeof(int8_t) * STATE_LENGTH);
+    c = (Curl *) malloc(sizeof(Curl)); 
+    memset(src, 0, STATE_LENGTH);
     if (!c)
         return NULL;
 
     c->state = initTrits(src, STATE_LENGTH);
-
+    free(src);
     return c;
 }
 
